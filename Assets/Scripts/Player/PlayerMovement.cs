@@ -1,16 +1,7 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.ComTypes;
-using Unity.VisualScripting;
-using UnityEditor.Experimental.GraphView;
-using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using UnityEngine.TextCore.Text;
-using UnityEngine.UIElements;
+
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -30,6 +21,7 @@ public class PlayerMovement : MonoBehaviour
     private Transform _parentObject;
     private Vector3 _velocity;
 
+    private float _horizontalInput;
     private float _yVelocity;
     private bool _doubleJumped;
     private bool _dead;
@@ -40,6 +32,8 @@ public class PlayerMovement : MonoBehaviour
         
         //subscriptions
         Collectables.orbCollected += OrbsCollected;
+        InputManager.jumpStarted += Jump;
+        InputManager.movement += CalculateHorizontalInput;
 
         //reference null checks
         if (_characterController is null)
@@ -49,38 +43,43 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         CalculateVelocity();
-    }
-
-    private void CalculateVelocity()
-    {
-        var horizontalInput = Input.GetAxisRaw("Horizontal");
-        var direction = new Vector3(horizontalInput, 0, 0);
-        _velocity = direction * _speed;
-
-        if (_characterController.isGrounded)
-        {
-            _doubleJumped = false;
-            
-            if (Input.GetKeyDown(KeyCode.Space))
-                _yVelocity = _jumpHeight;
-        }
-        else
-        {
-            if (!_doubleJumped && Input.GetKeyDown(KeyCode.Space))
-            {
-                _doubleJumped = true;
-                _yVelocity = _jumpHeight;
-            }
-                
-            _yVelocity -= _gravity * Time.deltaTime;
-        }
-
-        _velocity.y = _yVelocity;
         
         if (_dead && Input.GetKeyDown(KeyCode.R))
             SceneManager.LoadScene(0);
     }
 
+    private void CalculateHorizontalInput(Vector2 move)
+    {
+        _horizontalInput = move.x;
+    }
+
+    private void CalculateVelocity()
+    {
+        var direction = new Vector3(_horizontalInput, 0, 0);
+        _velocity = direction * _speed;
+        
+        if (!_characterController.isGrounded)
+            _yVelocity -= _gravity * Time.deltaTime;
+        
+        _velocity.y = _yVelocity;
+    }
+
+    private void Jump(InputAction.CallbackContext objContext)
+    {
+        if (_characterController.isGrounded)
+        {
+            _doubleJumped = false;
+            _yVelocity = _jumpHeight;
+        }
+        else
+        {
+            if (_doubleJumped) return;
+            
+            _doubleJumped = true;
+            _yVelocity = _jumpHeight;
+        }
+    }
+    
     private void FixedUpdate()
     {
         _characterController.Move(_velocity * Time.deltaTime);

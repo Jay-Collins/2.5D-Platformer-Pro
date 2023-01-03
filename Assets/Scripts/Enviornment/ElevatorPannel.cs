@@ -1,21 +1,31 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class ElevatorPannel : MonoBehaviour
 {
+    public static Action<int> callElevator;
+
+    [Header("References")]
     [SerializeField] private MeshRenderer _elevatorLight;
+    [SerializeField] private int _requiredOrbs;
     
-    private void OnTriggerStay(Collider other)
+    [Header("ID Must Match Platform")]
+    [SerializeField] private int _elevatorID;
+    
+    private void OnTriggerEnter(Collider other) => InputManager.interactStarted += Call;
+    private void OnTriggerExit(Collider other) => InputManager.interactStarted -= Call;
+
+    private void Call(InputAction.CallbackContext objContext)
     {
-        if (other.CompareTag("Player"))
+        if (PlayerMovement.orbs >= _requiredOrbs)
         {
-            Debug.Log("in zone");
-            if (Input.GetKeyDown(KeyCode.E))
-            {
-               _elevatorLight.material.color = Color.green;
-            }
+            _elevatorLight.material.color = Color.green;
+            callElevator?.Invoke(_elevatorID);
+        }
+        else
+        {
+            Debug.Log("Not enough coins!");
         }
     }
 }
