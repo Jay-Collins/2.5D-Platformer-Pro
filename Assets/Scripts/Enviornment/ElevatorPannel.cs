@@ -12,7 +12,9 @@ public class ElevatorPannel : MonoBehaviour
     
     [Header("ID Must Match Platform")]
     [SerializeField] private int _elevatorID;
-    
+
+    private void OnEnable() => MovingPlatform.resetElevator += ElevatorReset;
+
     private void OnTriggerEnter(Collider other) => InputManager.interactStarted += Call;
     private void OnTriggerExit(Collider other) => InputManager.interactStarted -= Call;
 
@@ -27,5 +29,11 @@ public class ElevatorPannel : MonoBehaviour
         {
             Debug.Log("Not enough coins!");
         }
+    }
+
+    private void ElevatorReset(int ID)
+    {
+        if (ID == _elevatorID)
+            _elevatorLight.material.color = Color.red;
     }
 }
